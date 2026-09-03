@@ -94,3 +94,34 @@ Al compartir el link a usuarios de la aplicacion este script se ejecuta dentro d
 
 - Checkear el tipo de archivo subido (evitando ejecutables, innecesarios para la caratula de una pelicula)
 - Validar que la solicitud no escape del directorio base
+
+## 4. Inyección al Servidor (SpEL/SSTI)
+
+[CWE-917](https://cwe.mitre.org/data/definitions/917.html): Improper Neutralization of Special Elements used in an Expression Language Statement y [CWE-94](https://cwe.mitre.org/data/definitions/94.html): Improper Control of Generation of Code
+
+### PoC CWE-917 y CWE-94
+
+**4.1.** Idem [Inicialización del PoC](#inicialización-del-poc)
+
+**4.2.** Solicitud maliciosa inyectando java en el buscador.
+
+```bash
+curl -X POST http://localhost:5000/upload/1 -F "afiche=@xss.svg;filename=xss.svg"
+```
+
+> Output: Un archivo creado en el sistema operativo del servidor.
+
+**4.3.** Verificar la vulnerabilidad
+
+```bash
+docker exec cinebuscador4 ls -l /tmp/servidor_comprometido.txt
+```
+
+> Output: *-rw-r--r-- 1 root root 0 Sep  6 20:54 /tmp/servidor_comprometido2.txt*
+
+La ejecución de comandos arbitrarios puede resultar en la conexión remota asi tomando control total de la infraestructura.
+
+### Mitigacion
+- Evtar introducir datos controlados por el usuario a un interprete de expresiones (usando `SimpleEvaluationContext`).
+- Bloquear la ejecucion de metodos java, limitando a solo lectura (idealmente `buscar` no pasa por SpEL).
+- Validacion de la entrada del usuario para que no se evalue como expresion (sanitizacion o whitelist).

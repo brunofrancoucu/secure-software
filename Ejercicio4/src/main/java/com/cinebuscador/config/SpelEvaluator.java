@@ -18,18 +18,17 @@ public class SpelEvaluator {
 
         ExpressionParser parser = new SpelExpressionParser();
         
+        // Instanciar solo lectura
+        
         org.springframework.expression.EvaluationContext context =
             SimpleEvaluationContext.forReadOnlyDataBinding().build();
 
-        StandardEvaluationContext standardContext = new StandardEvaluationContext();
-
-
-        standardContext.setVariable("system", System.class);
-        standardContext.setVariable("runtime", Runtime.class);
-
-        var expr = parser.parseExpression(expression);
-        Object result = expr.getValue(standardContext);
-
-        return result != null ? result.toString() : "";
+        try {
+            var expr = parser.parseExpression(expression);
+            Object result = expr.getValue(context);
+            return result != null ? result.toString() : "";
+        } catch (Exception e) {
+            return "Error en la búsqueda";
+        }
     }
 }
