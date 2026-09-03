@@ -125,3 +125,22 @@ La ejecución de comandos arbitrarios puede resultar en la conexión remota asi 
 - Evtar introducir datos controlados por el usuario a un interprete de expresiones (usando `SimpleEvaluationContext`).
 - Bloquear la ejecucion de metodos java, limitando a solo lectura (idealmente `buscar` no pasa por SpEL).
 - Validacion de la entrada del usuario para que no se evalue como expresion (sanitizacion o whitelist).
+
+## 5. Criptografía debil
+
+[CWE-257](https://cwe.mitre.org/data/definitions/257.html): Storing Passwords in a Recoverable Format, [CWE-798](https://cwe.mitre.org/data/definitions/798.html): Use of Hard-coded Credentials, y [CWE-327](https://cwe.mitre.org/data/definitions/327.html): Use of a Broken or Risky Cryptographic Algorithm
+
+### PoC CWE-257, CWE-798 y CWE-327
+
+**5.1.** Idem [Inicialización del PoC](#inicialización-del-poc)
+
+**5.2.** Crear dos usuarios con la misma contraseña (ej. *123*).
+
+**5.3.** Iniciar sesion con ambos y verificar la contraseña cifrada.
+
+> Output: *xwJeAskCpxdDfGLFoCrAEQ==*
+
+### Mitigacion
+
+- Utilizar variables de entorno para claves embebidas (en vez de encriptacion bidireccional).
+- Utilizar una funcion de hash con salt automatico en vez de 
