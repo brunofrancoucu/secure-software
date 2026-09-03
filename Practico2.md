@@ -10,11 +10,11 @@ Inicializacion comun de todos los ejercicios
 docker compose up -d --build
 ```
 
-2. Ingresar a localhost:5000
+2. Ingresar a [http://localhost:5000](http://localhost:5000)
 
 ## 1. SQL Inyection
 
-CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')
+[**CWE-89**](https://cwe.mitre.org/data/definitions/89.html?_x_tr_sl=en&_x_tr_tl=es&_x_tr_hl=es&_x_tr_pto=tc): *Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')*
 
 ### PoC
 
@@ -45,7 +45,7 @@ En este caso las modificaciones no son posibles por usar sqlite3, el cual prevee
 
 ## 2. Cross Site Scripting
 
-CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')
+[**CWE-79**](https://cwe.mitre.org/data/definitions/79.html?_x_tr_sl=en&_x_tr_tl=es&_x_tr_hl=es&_x_tr_pto=tc): *Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')*
 
 ### PoC
 
@@ -56,7 +56,7 @@ CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site
 **2.3.** Reemplazar la descripcion del formulario por:
 
 ```html
-<script>alert('Vulnerabilidad CWE-79 explotada exitosamente');</script>
+<script>alert('Vulnerabilidad **CWE-79** explotada exitosamente');</script>
 ```
 
 **2.4.** Guardar el Formulario
@@ -70,4 +70,27 @@ CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site
 
 - Remover `| safe`: Esta directiva de confianza de Jinja2 anula el por defecto de escapar los caracteres peligrosos (ej. `<` o `>`).
 
-## 3. 
+## 3. Subida Insegura de Archivos
+
+[**CWE-434**](https://cwe.mitre.org/data/definitions/434.html?_x_tr_sl=en&_x_tr_tl=es&_x_tr_hl=es&_x_tr_pto=tc): *Unrestricted Upload of File with Dangerous Type* y [**CWE-22**](https://cwe.mitre.org/data/definitions/22.html?_x_tr_sl=en&_x_tr_tl=es&_x_tr_hl=es&_x_tr_pto=tc): *Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')*
+
+Nota (CWE-434): Spring Boot, no soporta la ejecucion dinamica de archivos (ej. .jsp) asi como la sobreescritura de archivos esta protegida al usar `Files.copy()`, los ejemplos Web Shell en cwe.mitre.org no aplican para este entorno. 
+
+### PoC CWE-434 y CWE-22
+
+**3.1.** Idem [Inicialización del PoC](#inicialización-del-poc)
+
+**3.2.** Subir el archivo:
+
+```bash
+curl -X POST http://localhost:5000/upload/1 -F "afiche=@xss.svg;filename=xss.svg"
+```
+
+**3.3** Entrar a [http://localhost:5000/uploads/xss.svg](http://localhost:5000/uploads/xss.svg)
+
+Al compartir el link a usuarios de la aplicacion este script se ejecuta dentro de la frontera de confianza (el dominio), permitiendo ejemplo robar credenciales.
+
+### Mitigacion
+
+- Checkear el tipo de archivo subido (evitando ejecutables, innecesarios para la caratula de una pelicula)
+- Validar que la solicitud no escape del directorio base

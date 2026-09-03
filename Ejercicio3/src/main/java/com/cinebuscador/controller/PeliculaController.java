@@ -85,14 +85,38 @@ public class PeliculaController {
         Pelicula pelicula = peliculaRepo.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("Pelicula no encontrada"));
 
-        String filename = archivo.getOriginalFilename();
-        Path uploadPath = Paths.get(uploadDir);
+        String originalFilename = archivo.getOriginalFilename();
+
+        // Evitar colisiones
+        String extension = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        }
+        String safeFilename = java.util.UUID.randomUUID().toString() + extension;
+
+        // Whitelist de extensiones permitidas
+
+        List<String> permitidas = java.util.Arrays.asList(".jpg", ".jpeg", ".png", ".gif");
+        if (!permitidas.contains(extension)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.FORBIDDEN, 
+                "Tipo no permitido, aceptados: .jpg, .jpeg, .png y .gif."
+            );
+        }
+
+        // Validar path traversal
+
+        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
-        Files.copy(archivo.getInputStream(), uploadPath.resolve(filename));
+        Path targetLocation = uploadPath.resolve(safeFilename).normalize();
+        if (!targetLocation.getParent().equals(uploadPath)) {
+            throw new SecurityException("Intento de Path Traversal bloqueado durante la escritura.");
+        } 
+        Files.copy(archivo.getInputStream(), targetLocation);
 
-        pelicula.setAfichePath(filename);
+        pelicula.setAfichePath(safeFilename);
         peliculaRepo.save(pelicula);
 
         return "redirect:/";
@@ -102,10 +126,17 @@ public class PeliculaController {
     @ResponseBody
     public ResponseEntity<Resource> serveFile(@PathVariable String filename) throws IOException {
         Path filePath = Paths.get(uploadDir).resolve(filename).normalize();
+        Path baseUploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+
+        // Validar que la lectura no escape el directorio
+
+        if (!filePath.startsWith(baseUploadPath)) {
+            return ResponseEntity.status(403).build();
+        }
+
         Resource resource = new UrlResource(filePath.toUri());
         MediaType mediaType = MediaTypeFactory.getMediaType(resource)
         .orElse(MediaType.APPLICATION_OCTET_STREAM);
-
         if (!resource.exists()) {
             return ResponseEntity.notFound().build();
         }
